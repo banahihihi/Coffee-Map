@@ -18,34 +18,53 @@ import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import CardMedia from '@material-ui/core/CardMedia';
 import Divider from '@material-ui/core/Divider';
+import Hidden from '@material-ui/core/Hidden';
 
 import topImg from './top.jpg';
 
 const useStyles = makeStyles(theme => ({
-  top: {
+  root: {
     minHeight: '100vh',
     width: '100vw',
   },
   topImg: {
     position: 'relative',
+    height: '40vh',
     width: '100vw',
+    backgroundImage: `url(${topImg})`,
+    backgroundSize: 'cover',
   },
   search: {
     position: 'relative',
     display: 'flex',
-    flexGrow: 0,
-    justifyContent: 'center',
   },
-  sticky: {
+  toolbar: theme.mixins.toolbar,
+  dialogRoot: {
+    [theme.breakpoints.up('sm')]: {
+      display: 'flex',
+      minHeight: '100vh',
+      flexDirection: 'row-reverse',
+    },
+  },
+  mapRoot: {
     zIndex: 2,
     position: 'sticky',
     top: 0,
+    [theme.breakpoints.up('sm')]: {
+      flexGrow: 1,
+      height: '100vh',
+      width: 'auto',
+    },
   },
-  toolbar: theme.mixins.toolbar,
   map: {
     position: 'relative',
-    height: '60vw',
+    height: '30vh',
     width: '100vw',
+    [theme.breakpoints.up('sm')]: {
+      position: 'relative',
+      height: '100%',
+      width: '100%',
+    },
   },
   imHere:{
     position: 'absolute',
@@ -59,32 +78,32 @@ const useStyles = makeStyles(theme => ({
     width: 20,
     height: 20,
     transform: 'translate(-50%, -50%)',
-    border: '1px solid #fff',
+    border: '1px solid black',
     borderRadius: 20,
     fontSize: 14,
     textAlign: 'center',
-    color: '#fff',
-    backgroundColor: '#000',
+    color: 'black',
+    backgroundColor: 'white',
+  },
+  contentRoot: {
+    [theme.breakpoints.up('sm')]: {
+      width: 360,
+    },
   },
   content: {
-    position: 'relative',
-    top:0,
-    flexGrow: 1,
+    [theme.breakpoints.up('sm')]: {
+
+    },
   },
   detailSticky:{
     zIndex: 3,
     position: 'sticky',
     top: 0,
-  },
-  photoRoot: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    overflow: 'hidden',
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: "white",
   },
   cafeCard: {
     display: 'flex',
+    height: 120,
     padding: theme.spacing(1),
   },
   detailCard: {
@@ -94,14 +113,32 @@ const useStyles = makeStyles(theme => ({
     display: 'flex',
   },
   cardImg: {
-    width: 120,
-    height: 120,
+    width: 'auto',
+    height: '100%'
   },
   avatar: {
     position: 'absolute',
     margin: 2,
-    color: '#fff',
-    backgroundColor: '#000',
+    color: 'black',
+    backgroundColor: 'white',
+    border: '1px solid black',
+  },
+  photoRoot: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    overflow: 'hidden',
+    backgroundColor: theme.palette.background.paper,
+  },
+  gridList: {
+    maxWidth: 600,
+    flexGrow: 1,
+  },
+  photoTile: {
+    height: '33vw !important',
+    [theme.breakpoints.up('sm')]: {
+      height: '200px !important',
+    },
   },
 }));
 
@@ -176,19 +213,18 @@ const Main = (props)=>{
   };
 
   return(
-    <div className={classes.top}>
+    <div className={classes.root}>
       <div className={classes.toolbar}/>
       <div>
-        <img src={topImg} alt="topImage" className={classes.topImg} />
+        <div className={classes.topImg}/>{/*backgroundImgで写真を描写してる backgroundSize:coverを使うため */}
         <Typography align="left" variant="h6">あなたの現在地から徒歩10分以内のカフェを探すことができます。</Typography>
         <Typography align="left" variant="h6">地図上でInstagramの写真を見ながらお気に入りのカフェを探しましょう。</Typography>
-      </div>
-      <div>
         <Button variant="contained" color="inherit" fullWidth onClick={handleNearbyOpen} className={classes.search}>カフェを探す</Button>
         <Typography align="left" variant="subtitle2">※ブラウザの位置情報サービスをオンにしてください</Typography>
       </div>
       <Dialog fullScreen open={props.openData} scroll="body" TransitionComponent={Transition}>
-        <div className={classes.sticky}>
+        <div  className={classes.dialogRoot}>
+        <div className={classes.mapRoot}>
           <div className={classes.toolbar}/>
           <div className={classes.map}>
             <GoogleMapReact
@@ -210,15 +246,19 @@ const Main = (props)=>{
             </GoogleMapReact>
           </div>
         </div>
-        <div className={classes.content}>
-          { noCafe && <Typography>徒歩圏内にカフェはありません</Typography>}
-          {console.log(cafes)/*開発用*/}
-          {cafes.map((cafe, key)=>{
-            return(
-              <CafeCard info={cafe} key={key}/>
-            )
-          })}
-        </div>     
+        <div className={classes.contentRoot}>
+          <Hidden xsDown><div className={classes.toolbar}/></Hidden>
+          <div className={classes.content}>
+            { noCafe && <Typography>徒歩圏内にカフェはありません</Typography>}
+            {console.log(cafes)/*開発用*/}
+            {cafes.map((cafe, key)=>{
+              return(
+                <CafeCard info={cafe} key={key}/>
+              )
+            })}
+          </div>
+        </div>
+        </div>
       </Dialog>
     </div>
   )
@@ -247,11 +287,12 @@ const CafeCard = (props)=>{
   const [noPhoto, setNoPhoto] = useState(false);
   const openNow = props.info.oh && props.info.oh.open_now;
   const mapLink = "https://www.google.com/maps/place/?q=place_id:" + props.info.place_id;
+  const hashtagLink = `https://www.instagram.com/explore/tags/${props.info.name}/`;
 
   const getData = async ()=>{
     let urls=[];
     await axios
-      .get(`https://www.instagram.com/explore/tags/${props.info.name}/`)
+      .get(hashtagLink)
       .then((res)=>{
         let json_string = res.data.split(/window\._sharedData = (.*);<\/script>/g)[1].trim();
         let Arrya_data = JSON.parse(json_string);
@@ -279,7 +320,7 @@ const CafeCard = (props)=>{
     <>
       <Avatar className={classes.avatar}>{props.info.id}</Avatar>
       <Card square elevation={0} onClick={handleDetailOpen} className={classes.cafeCard}>
-        <CardMedia component="img" src={topImg} className={classes.cardImg}/>
+        <CardMedia component="img" src={topImg}  className={classes.cardImg}/>
         <CardContent>
           <Typography>{props.info.name}</Typography>
           {openNow && <Typography color="error">開店中</Typography>}
@@ -291,28 +332,26 @@ const CafeCard = (props)=>{
         <div className={classes.detailSticky}>
           <div className={classes.toolbar}/>
           <Avatar className={classes.avatar} onClick={handleDetailClose}><BackspaceIcon/></Avatar>
-          <Card square elevation={0} className={classes.detailCard}>
-            <div className={classes.cafeDetail}>
-              <CardMedia component="img" src={topImg} className={classes.cardImg}/>
-              <CardContent>
-                <Typography>{props.info.name}</Typography>
-                {openNow && <Typography color="error">開店中</Typography>}
-                <Typography>Rating : {props.info.rating}</Typography>
-              </CardContent>
-            </div>
+          <Card square elevation={0} className={classes.cafeCard}>
+            <CardMedia component="img" src={topImg} className={classes.cardImg}/>
             <CardContent>
-              <Typography>adress: {props.info.vic}</Typography>
-              <Button variant="outlined" component="a" href={mapLink}>Google Mapで表示する</Button>
+              <Typography>{props.info.name}</Typography>
+              {openNow && <Typography color="error">開店中</Typography>}
+              <Typography>Rating : {props.info.rating}</Typography>
             </CardContent>
           </Card>
+          <div style={{display: 'flex'}}>
+            <Button variant="outlined" component="a" href={mapLink}>Google Map</Button>
+            <Button variant="outlined" component="a" href={hashtagLink}>InstaGram</Button>
+          </div>
         </div>
         <Divider />
         <div className={classes.photoRoot}>
           { noPhoto && <Typography>写真がありません</Typography>}
-          <GridList cellHeight={150} cols={3} spacing={2}>
+          <GridList cellHeight="auto" cols={3} spacing={3} className={classes.gridList}>
             {photoURLs.map((url, key)=>{
               return(
-                <GridListTile key={key}>
+                <GridListTile key={key} className={classes.photoTile}>
                   <img src={url.displayUrl} alt="cafePhoto"/>
                 </GridListTile>
               )

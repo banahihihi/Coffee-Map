@@ -9,7 +9,7 @@ import brown from '@material-ui/core/colors/brown';
 import green from '@material-ui/core/colors/green';
 
 
-const theme = createMuiTheme({//茶色はクソダサい、白黒でもいいんじゃない
+const theme = createMuiTheme({//茶色はクソダサい、白黒でもいいんじゃない 使ってない
   palette: {
     primary: {
       main: brown[500],
