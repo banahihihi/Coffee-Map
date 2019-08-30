@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import {usePosition} from 'use-position';
 import axios from 'axios';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
 
 import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
@@ -10,7 +12,6 @@ import Dialog from '@material-ui/core/Dialog';
 import GoogleMapReact from 'google-map-react';
 import RoomIcon from '@material-ui/icons/Room';
 import BackspaceIcon from '@material-ui/icons/Backspace';
-import LocalCafeIcon from '@material-ui/icons/LocalCafe';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import Avatar from '@material-ui/core/Avatar';
@@ -148,6 +149,13 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 const MAP_API_KEY = process.env.REACT_APP_MAP_API_KEY;
 
+firebase.initializeApp({
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTHDOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECTID,
+});
+const db = firebase.firestore();
+
 const Main = (props)=>{
   const classes = useStyles();
   //const [search, setSearch] = useState(false);
@@ -182,10 +190,25 @@ const Main = (props)=>{
     }
   };
 
-  const handleNearbySearch = ()=>{
+  const handleNearbySearch = async ()=>{//firebaseからサーチしてる、現在地からの距離で条件付けたい
+    let cafesArray;
+    await db.collection('cafes')
+      .get()
+      .then((res)=>{
+        cafesArray = res.docs.map(doc => doc.data());//このdoc.data()でオブジェクトの配列を得られる
+        for(let i=0;i<cafesArray.length;i++){
+          cafesArray[i].id = i+1;
+        }
+        console.log(cafesArray);
+      });
+    setCafes(cafesArray);
+  };
+
+/*
+  const handleNearbySearch = ()=>{//GoogleMapへのリクエスト＆読み取り ここをFirestoreに書き込みたい
     const request = {
       location: myLatLng,
-      radius: '600',//bydistanceだとkioskとかも入ってしまう
+      radius: '800',//bydistanceだとkioskとかも上位に入ってしまう
       type: ['cafe'],
     };
   
@@ -202,7 +225,7 @@ const Main = (props)=>{
             vic: res[i].vicinity,//住所
             rating: res[i].rating,
             oh: res[i].opening_hours,
-            place_id: res[i].place_id,
+            placeId: res[i].place_id,
           })
         }
         setCafes(cafesArray);//これでhooksに入れられる
@@ -211,7 +234,7 @@ const Main = (props)=>{
       }
     }));
   };
-
+*/
   return(
     <div className={classes.root}>
       <div className={classes.toolbar}/>
@@ -286,10 +309,11 @@ const CafeCard = (props)=>{
   const [photoURLs, setPhotoURLs] = useState([]);
   const [noPhoto, setNoPhoto] = useState(false);
   const openNow = props.info.oh && props.info.oh.open_now;
-  const mapLink = "https://www.google.com/maps/place/?q=place_id:" + props.info.place_id;
+  const mapLink = "https://www.google.com/maps/place/?q=place_id:" + props.info.placeId;
   const hashtagLink = `https://www.instagram.com/explore/tags/${props.info.name}/`;
 
-  const getData = async ()=>{
+/*
+  const getData = async ()=>{//ここもfirestoreに入れたい
     let urls=[];
     await axios
       .get(hashtagLink)
@@ -307,9 +331,10 @@ const CafeCard = (props)=>{
       .catch(()=>{setNoPhoto(true)})
     setPhotoURLs(urls);
   };
+*/
 
   const handleDetailOpen = ()=>{
-    getData();
+    //getData();
     setOpenDetail(true);
   };
   const handleDetailClose = ()=>{
