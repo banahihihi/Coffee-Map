@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 import {usePosition} from 'use-position';
 import axios from 'axios';
-import firebase from 'firebase/app';
-import 'firebase/firestore';
+//import firebase from 'firebase/app';
+//import 'firebase/firestore';
 
 import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
@@ -22,6 +22,7 @@ import Divider from '@material-ui/core/Divider';
 import Hidden from '@material-ui/core/Hidden';
 
 import topImg from './top.jpg';
+import coffeeImg from './coffee.png';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -115,7 +116,10 @@ const useStyles = makeStyles(theme => ({
   },
   cardImg: {
     width: 'auto',
-    height: '100%'
+    height: '100%',
+  },
+  cardContent: {
+    flexGrow: 1,
   },
   avatar: {
     position: 'absolute',
@@ -148,27 +152,27 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const MAP_API_KEY = process.env.REACT_APP_MAP_API_KEY;
+const GN_KEYID = process.env.REACT_APP_GN_KEYID;
 
+/*
 firebase.initializeApp({
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTHDOMAIN,
   projectId: process.env.REACT_APP_FIREBASE_PROJECTID,
 });
 const db = firebase.firestore();
+*/
 
 const Main = (props)=>{
   const classes = useStyles();
   //const [search, setSearch] = useState(false);
   const [myLocation, setMyLocation] = useState({});
-  //const [placesService,setPlacesService] = useState({});
-  //const [myLatLng,setMyLatLng] = useState(null);
   const [cafes, setCafes] = useState([]);
-  const [noCafe, setNoCafe] = useState(false);//これもcafesに入れたい
+  const [noCafe, setNoCafe] = useState(false);
 
-  const { latitude, longitude, timestamp, accuracy, error } = usePosition();
+  const { latitude, longitude } = usePosition();
   let myLoc={lat: latitude, lng: longitude}
-  let placesService;
-  let myLatLng;
+
   /*
   const handleSearchOpen = ()=>{//入力からlat,lngをmyLocationに代入
     setSearch(true);
@@ -190,51 +194,48 @@ const Main = (props)=>{
     }
   };
 
-  const handleNearbySearch = async ()=>{//firebaseからサーチしてる、現在地からの距離で条件付けたい
-    let cafesArray;
-    await db.collection('cafes')
-      .get()
+  const handleNearbySearch = async ()=>{
+    let cafeArray=[];
+    const gnUrl = `https://api.gnavi.co.jp/RestSearchAPI/v3/?keyid=${GN_KEYID}&input_coordinates_mode=2&latitude=${latitude}&longitude=${longitude}&range=3&hit_per_page=30&category_l=RSFST18000`
+    await axios
+      .get(gnUrl)
       .then((res)=>{
-        cafesArray = res.docs.map(doc => doc.data());//このdoc.data()でオブジェクトの配列を得られる
-        for(let i=0;i<cafesArray.length;i++){
-          cafesArray[i].id = i+1;
+        console.log(res);//開発用
+        if(res.data.total_hit_count === 0){
+          setNoCafe(true);
+        }else{
+          for(let i=0;i<res.data.rest.length;i++){
+            cafeArray.push({
+              sort: i+1,
+              name: res.data.rest[i].name,
+              lat: res.data.rest[i].latitude,
+              lng: res.data.rest[i].longitude,
+              imageUrl: res.data.rest[i].image_url.shop_image1,
+              vic: res.data.rest[i].adress,//住所
+              opentime: res.data.rest[i].opentime,
+            })
+          };
         }
-        console.log(cafesArray);
-      });
-    setCafes(cafesArray);
+      })
+      .catch((err)=>{console.log(err)})
+    setCafes(cafeArray);
   };
 
 /*
-  const handleNearbySearch = ()=>{//GoogleMapへのリクエスト＆読み取り ここをFirestoreに書き込みたい
-    const request = {
-      location: myLatLng,
-      radius: '800',//bydistanceだとkioskとかも上位に入ってしまう
-      type: ['cafe'],
-    };
-  
-    placesService.nearbySearch(request, ((res,status,pagination)=>{
-      if(status === "OK"){
-        console.log(status,pagination,res); //開発用
-        let cafesArray=[];
-        for(let i=0; i<res.length; i++){
-          cafesArray.push({
-            id: i+1,
-            name: res[i].name,
-            lat: res[i].geometry.location.lat(),
-            lng: res[i].geometry.location.lng(),
-            vic: res[i].vicinity,//住所
-            rating: res[i].rating,
-            oh: res[i].opening_hours,
-            placeId: res[i].place_id,
-          })
+  const handleNearbySearch = async ()=>{//firebaseからサーチしてる、現在地からの距離で条件付けたい
+    let cafesArray;
+    await db.collection('cafes')//.where()で条件指定できる
+      .then((res)=>{
+        cafesArray = res.docs.map(doc => doc.data());//このdoc.data()でオブジェクトの配列を得られる
+        for(let i=0;i<cafesArray.length;i++){//ここで二回foreachしてるのを一回にしたい
+          cafesArray[i].id = i+1;
         }
-        setCafes(cafesArray);//これでhooksに入れられる
-      }else{
-        setNoCafe(true);
-      }
-    }));
+      })
+      .catch((err)=>{console.log(err)})
+    setCafes(cafesArray);
   };
 */
+
   return(
     <div className={classes.root}>
       <div className={classes.toolbar}/>
@@ -298,7 +299,7 @@ const ImHere = ()=>{
 const CafeMarker = (props)=>{
   const classes = useStyles();
   return(
-    <div className={classes.marker}>{props.info.id}</div>
+    <div className={classes.marker}>{props.info.sort}</div>
   )
 };
 
@@ -308,12 +309,11 @@ const CafeCard = (props)=>{
   const [openDetail, setOpenDetail] = useState(false);
   const [photoURLs, setPhotoURLs] = useState([]);
   const [noPhoto, setNoPhoto] = useState(false);
-  const openNow = props.info.oh && props.info.oh.open_now;
   const mapLink = "https://www.google.com/maps/place/?q=place_id:" + props.info.placeId;
   const hashtagLink = `https://www.instagram.com/explore/tags/${props.info.name}/`;
+  const cardImage = (props.info.imageUrl ? props.info.imageUrl : coffeeImg);
 
-/*
-  const getData = async ()=>{//ここもfirestoreに入れたい
+  const getData = async ()=>{//insta写真取得
     let urls=[];
     await axios
       .get(hashtagLink)
@@ -331,10 +331,9 @@ const CafeCard = (props)=>{
       .catch(()=>{setNoPhoto(true)})
     setPhotoURLs(urls);
   };
-*/
 
   const handleDetailOpen = ()=>{
-    //getData();
+    getData();
     setOpenDetail(true);
   };
   const handleDetailClose = ()=>{
@@ -343,13 +342,12 @@ const CafeCard = (props)=>{
 
   return(
     <>
-      <Avatar className={classes.avatar}>{props.info.id}</Avatar>
+      <Avatar className={classes.avatar}>{props.info.sort}</Avatar>
       <Card square elevation={0} onClick={handleDetailOpen} className={classes.cafeCard}>
-        <CardMedia component="img" src={topImg}  className={classes.cardImg}/>
-        <CardContent>
+        <CardMedia component="img" src={cardImage} className={classes.cardImg}/>
+        <CardContent className={classes.cardContent}>
           <Typography>{props.info.name}</Typography>
-          {openNow && <Typography color="error">開店中</Typography>}
-          <Typography>Rating : {props.info.rating}</Typography>
+          <Typography>{props.info.opentime}</Typography>
         </CardContent>
       </Card>
       <Divider />
@@ -358,11 +356,10 @@ const CafeCard = (props)=>{
           <div className={classes.toolbar}/>
           <Avatar className={classes.avatar} onClick={handleDetailClose}><BackspaceIcon/></Avatar>
           <Card square elevation={0} className={classes.cafeCard}>
-            <CardMedia component="img" src={topImg} className={classes.cardImg}/>
-            <CardContent>
+            <CardMedia component="img" src={cardImage} className={classes.cardImg}/>
+            <CardContent className={classes.cardContent}>
               <Typography>{props.info.name}</Typography>
-              {openNow && <Typography color="error">開店中</Typography>}
-              <Typography>Rating : {props.info.rating}</Typography>
+              <Typography>{props.info.opentime}</Typography>
             </CardContent>
           </Card>
           <div style={{display: 'flex'}}>
