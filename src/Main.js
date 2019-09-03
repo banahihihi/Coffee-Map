@@ -188,9 +188,7 @@ const Main = (props)=>{
 
   const handleApiLoaded = (map, maps)=>{
     if(map && maps){
-      placesService = new maps.places.PlacesService(map);
-      myLatLng =  new maps.LatLng(myLocation.lat, myLocation.lng);
-      handleNearbySearch();//なぜかnew関数がグローバルで渡せないからここで動作させる
+      handleNearbySearch();
     }
   };
 
